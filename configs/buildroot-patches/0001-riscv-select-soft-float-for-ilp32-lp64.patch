@@ -1,0 +1,40 @@
+From: rv32i-linux <build@localhost>
+Subject: [PATCH] arch/riscv: select BR2_SOFT_FLOAT for ilp32/lp64 ABIs
+
+Buildroot 2026.08.1 dropped the `select BR2_SOFT_FLOAT` from the
+RISC-V ilp32 and lp64 ABIs. As a result BR2_SOFT_FLOAT is never set
+for RISC-V, so package/uclibc/uclibc.mk takes the hardware-FPU branch
+and force-enables UCLIBC_HAS_FPU and UCLIBC_HAS_FENV. uClibc's
+libm/riscv32/fenv_private.h then emits `fsrm`/`frflags`/`fsflags`,
+which cannot be assembled for a soft-float target such as rv32ima:
+
+    Error: unrecognized opcode `fsrm a0', extension `f' or `zfinx' required
+
+The ilp32/lp64 ABIs are the soft-float ABIs, so restore the previous
+behaviour by selecting BR2_SOFT_FLOAT for them. This makes uclibc.mk
+disable UCLIBC_HAS_FPU and leave UCLIBC_HAS_FENV at its default (n).
+
+Signed-off-by: rv32i-linux <build@localhost>
+---
+ arch/Config.in.riscv | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/Config.in.riscv b/arch/Config.in.riscv
+--- a/arch/Config.in.riscv
++++ b/arch/Config.in.riscv
+@@ -87,6 +87,7 @@ config BR2_RISCV_ABI_ILP32
+ config BR2_RISCV_ABI_ILP32
+ 	bool "ilp32"
+ 	depends on !BR2_ARCH_IS_64
++	select BR2_SOFT_FLOAT
+ 
+ config BR2_RISCV_ABI_ILP32F
+ 	bool "ilp32f"
+@@ -99,6 +100,7 @@ config BR2_RISCV_ABI_LP64
+ config BR2_RISCV_ABI_LP64
+ 	bool "lp64"
+ 	depends on BR2_ARCH_IS_64
++	select BR2_SOFT_FLOAT
+ 
+ config BR2_RISCV_ABI_LP64F
+ 	bool "lp64f"

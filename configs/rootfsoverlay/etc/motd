@@ -1,0 +1,10 @@
+Welcome to rv32i-linux (rv32imac, Sv32)
+
+Fun commands:
+  sl              steam locomotive
+  ascii_invaders  ASCII space invaders
+  bvi             vi-like hex editor
+  bc              arbitrary-precision calculator
+  mawk            AWK interpreter
+
+Type 'busybox --list' for all applets.

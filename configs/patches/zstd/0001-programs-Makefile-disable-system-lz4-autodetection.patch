@@ -1,0 +1,31 @@
+From: rv32i-linux <build@localhost>
+Subject: [PATCH] programs/Makefile: disable system lz4 autodetection
+
+zstd 1.5.7's fileio.c still uses the pre-1.10 lz4 `contentChecksum_t`
+typedef, which lz4 1.10 renamed to `LZ4F_contentChecksum_t`. When the
+build host provides a newer system liblz4, the autodetection enables
+.lz4 support and the build fails with:
+
+    fileio.c:1424:44: error: 'contentChecksum_t' undeclared
+
+host-zstd is only used by ccache, which does not need lz4 support, so
+disable the autodetection to keep the build hermetic and independent of
+the host's liblz4 version.
+
+Signed-off-by: rv32i-linux <build@localhost>
+---
+ programs/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/programs/Makefile b/programs/Makefile
+--- a/programs/Makefile
++++ b/programs/Makefile
+@@ -98,7 +98,7 @@ endif
+ 
+ # lz4 detection
+ NO_LZ4_MSG := ==> no liblz4, building zstd without .lz4 support
+-HAVE_LZ4 ?= $(shell printf '$(NUM_SYMBOL)include <lz4frame.h>\n$(NUM_SYMBOL)include <lz4.h>\nint main(void) { return 0; }' > have_lz4.c && $(CC) $(FLAGS) -o have_lz4$(EXT) have_lz4.c -llz4 2> $(VOID) && rm have_lz4$(EXT) && echo 1 || echo 0; rm have_lz4.c)
++HAVE_LZ4 = 0
+ ifeq ($(HAVE_LZ4), 1)
+   LZ4_MSG := ==> building zstd with .lz4 compression support
+   LZ4CPP = -DZSTD_LZ4COMPRESS -DZSTD_LZ4DECOMPRESS
