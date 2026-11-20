@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/riscv 7.3.4 Kernel Configuration
+# Linux/riscv 7.3.5 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="riscv32-buildroot-linux-uclibc-gcc.br_real (Buildroot 2026.08.1-dirty) 15.3.0"
 CONFIG_CC_IS_GCC=y
@@ -83,9 +83,9 @@ CONFIG_POSIX_CPU_TIMERS_TASK_WORK=y
 #
 # Timers subsystem
 #
-CONFIG_HZ_PERIODIC=y
-# CONFIG_NO_HZ_IDLE is not set
-# CONFIG_NO_HZ is not set
+# CONFIG_HZ_PERIODIC is not set
+CONFIG_NO_HZ_IDLE=y
+CONFIG_NO_HZ=y
 # CONFIG_HIGH_RES_TIMERS is not set
 # CONFIG_POSIX_AUX_CLOCKS is not set
 # end of Timers subsystem
