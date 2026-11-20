@@ -10,8 +10,9 @@ The MMU image uses:
 - `CONFIG_RISCV_SBI=y`
 - `CONFIG_RISCV_M_MODE=n`
 - `CONFIG_SMP=n`
+- `CONFIG_TMPFS=y`
 
-The image keeps the ext4 disk root and the virtio devices. The libc is uClibc-ng. U-Boot loads the kernel `Image` at `0x80600000`; OpenSBI `fw_jump` is the firmware.
+The image keeps the ext4 disk root and the virtio devices. The libc is uClibc-ng. U-Boot loads the kernel `Image` at `0x80600000`; OpenSBI `fw_jump` is the firmware. The DTS supplies `riscv,isa-base` and `riscv,isa-extensions` for ISA detection; the legacy `riscv,isa` string stays for boot stages that use it.
 
 ## Linux constraints
 

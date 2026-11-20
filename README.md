@@ -14,7 +14,7 @@ implements. Each image has its own kernel, root filesystem and GPT disk.
 | ISA    | min `rv32imac_zicsr_zifencei_zicntr` plus Sv32; max the full emulator ISA plus Sv32   |
 | ABI    | `ilp32` (no F/D)                                                                     |
 | RAM    | 64 MiB at `0x80000000`                                                               |
-| UART   | 16550A at `0x10000000` for `earlycon`; virtio-console at `0x10002000`, `console=hvc0` |
+| UART   | 16550A at `0x10000000` on PLIC source 4 for `earlycon`; virtio-console at `0x10002000`, `console=hvc0` |
 | Net    | virtio-net at `0x10003000`, static IPv4 and IPv6 ULA                                 |
 | CLINT  | `0x02000000`                                                                         |
 | SYSCON | `0x00100000` (poweroff/reboot)                                                       |
@@ -97,6 +97,7 @@ them and starts the kernel. The kernel mounts the rootfs by `PARTUUID`.
   M-mode and provides the SBI.
 - The DTB's `chosen/bootargs` is authoritative; `CONFIG_CMDLINE` is only a
   fallback.
+- The kernel config enables `CONFIG_TMPFS` and BusyBox enables `FEATURE_MOUNT_FLAGS`, so the fstab `mode=`, `nosuid` and `nodev` options work.
 - The emulator must implement full `M` (DIV/REM), not just `Zmmul`.
 - The minimal image needs `RV32I`, `M`, `A`, `C`, `Zicsr`, `Zifencei`,
   `Zicntr` and `Sv32`. Build the lean emulator with:
@@ -108,6 +109,8 @@ them and starts the kernel. The kernel mounts the rootfs by `PARTUUID`.
   `Zbc` is omitted because the default emulator binary has `Zbkc` but not
   `Zbc`.
 - The DTS files live in the emulator repo next to the hardware description;
-  this project only builds the DTBs.
+  this project only builds the DTBs. They carry `riscv,isa-base` and
+  `riscv,isa-extensions` for kernel ISA detection; the legacy `riscv,isa`
+  string stays for boot stages that use it.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
