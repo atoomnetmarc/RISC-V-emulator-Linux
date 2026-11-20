@@ -9,19 +9,19 @@ implements. Each image has its own kernel, root filesystem and GPT disk.
 
 # Target
 
-| Item   | Value                                                                                |
-| :----- | :----------------------------------------------------------------------------------- |
-| ISA    | min `rv32imac_zicsr_zifencei_zicntr` plus Sv32; max the full emulator ISA plus Sv32   |
-| ABI    | `ilp32` (no F/D)                                                                     |
-| RAM    | 64 MiB at `0x80000000`                                                               |
+| Item   | Value                                                                                                  |
+| :----- | :----------------------------------------------------------------------------------------------------- |
+| ISA    | min `rv32imac_zicsr_zifencei_zicntr` plus Sv32; max the full emulator ISA plus Sv32                    |
+| ABI    | `ilp32` (no F/D)                                                                                       |
+| RAM    | 64 MiB at `0x80000000`                                                                                 |
 | UART   | 16550A at `0x10000000` on PLIC source 4 for `earlycon`; virtio-console at `0x10002000`, `console=hvc0` |
-| Net    | virtio-net at `0x10003000`, static IPv4 and IPv6 ULA                                 |
-| RNG    | virtio-rng at `0x10004000` on PLIC source 5, host `getrandom()`                      |
-| RTC    | goldfish RTC at `0x10005000` on PLIC source 6, host realtime plus monotonic delta    |
-| CLINT  | `0x02000000`                                                                         |
-| SYSCON | `0x00100000` (poweroff/reboot)                                                       |
-| DTB    | loaded at runtime (`-b 0x82200000,artifacts/linux-mmu.dtb` or `linux-mmu-max.dtb`)   |
-| Rootfs | ext4 on a GPT disk image, attached with `-D` (`artifacts/disk.img`); no initramfs    |
+| Net    | virtio-net at `0x10003000`, static IPv4 and IPv6 ULA                                                   |
+| RNG    | virtio-rng at `0x10004000` on PLIC source 5, host `getrandom()`                                        |
+| RTC    | goldfish RTC at `0x10005000` on PLIC source 6, host realtime plus monotonic delta                      |
+| CLINT  | `0x02000000`                                                                                           |
+| SYSCON | `0x00100000` (poweroff/reboot)                                                                         |
+| DTB    | loaded at runtime (`-b 0x82200000,artifacts/linux-mmu.dtb` or `linux-mmu-max.dtb`)                     |
+| Rootfs | ext4 on a GPT disk image, attached with `-D` (`artifacts/disk.img`); no initramfs                      |
 
 # Build
 
@@ -84,6 +84,31 @@ Override `OPENSBI`, `OPENSBI_MAX`, `UBOOT`, `EMULATOR_DIR` or `DTS` on the
 `make` command line to use other builds. Add `-m <instructions>` to stop after
 a fixed instruction count, `-N <ifname>` to attach a TAP interface to
 virtio-net, or `-v` for an instruction trace.
+
+# Snapshot from Native to SimAVR
+
+The Native emulator can write a snapshot at any point in the boot and SimAVR can continue from it. Use three commands in this order.
+
+```sh
+# 1. Start the maximal Native boot with snapshots enabled and leave it running.
+../RISC-V-emulator-Native/binaries/gcc/RV32I-linux-mmu-max \
+    -S boot-snapshot \
+    -b 0x82200000,artifacts/linux-mmu-max.dtb \
+    -l 0x80000000,../RISC-V-emulator-opensbi/build-max/platform/generic/firmware/fw_jump.bin \
+    -l 0x80400000,../RISC-V-emulator-u-boot/build/u-boot.bin \
+    -D artifacts/disk-max.img
+
+# 2. In another shell, request the snapshot at the desired moment.
+kill -USR1 $(pidof RV32I-linux-mmu-max)
+
+# 3. Stop Native, then continue the same boot on SimAVR with the maximal firmware.
+../RISC-V-emulator-SimAVR/binaries/gcc/simavr-host \
+    -R boot-snapshot \
+    -D artifacts/disk-max.img \
+    ../RISC-V-emulator-AVR/hex/ATmega1284P_linux-mmu-max.hex
+```
+
+Step 2 writes `boot-snapshot.json` with the CPU and device state and `boot-snapshot.bin` with the 64 MiB guest RAM. `pidof` uses the kernel process name, which is truncated to 15 characters, so `RV32I-linux-mmu-max` appears as `RV32I-linux-mmu`. Native continues after writing the snapshot. Stop Native before step 3 so both emulators do not write the same disk image. SimAVR also accepts `-S <prefix>` and `SIGUSR1`, so a run that started on Native can be snapshotted again on SimAVR.
 
 # Disk layout
 
