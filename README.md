@@ -16,6 +16,7 @@ implements. Each image has its own kernel, root filesystem and GPT disk.
 | RAM    | 64 MiB at `0x80000000`                                                               |
 | UART   | 16550A at `0x10000000` on PLIC source 4 for `earlycon`; virtio-console at `0x10002000`, `console=hvc0` |
 | Net    | virtio-net at `0x10003000`, static IPv4 and IPv6 ULA                                 |
+| RNG    | virtio-rng at `0x10004000` on PLIC source 5, host `getrandom()`                      |
 | CLINT  | `0x02000000`                                                                         |
 | SYSCON | `0x00100000` (poweroff/reboot)                                                       |
 | DTB    | loaded at runtime (`-b 0x82200000,artifacts/linux-mmu.dtb` or `linux-mmu-max.dtb`)   |
