@@ -13,6 +13,10 @@ The MMU image uses:
 - `CONFIG_TMPFS=y`
 - `CONFIG_HW_RANDOM=y`
 - `CONFIG_HW_RANDOM_VIRTIO=y`
+- `CONFIG_RTC_CLASS=y`
+- `CONFIG_RTC_HCTOSYS=y`
+- `CONFIG_RTC_HCTOSYS_DEVICE="rtc0"`
+- `CONFIG_RTC_DRV_GOLDFISH=y`
 
 The image keeps the ext4 disk root and the virtio devices. The libc is uClibc-ng. U-Boot loads the kernel `Image` at `0x80600000`; OpenSBI `fw_jump` is the firmware. OpenSBI is built in [`RISC-V-emulator-opensbi`](../../RISC-V-emulator-opensbi) with the `base,ipi,time` SBI extensions. The DTS supplies `riscv,isa-base` and `riscv,isa-extensions` for ISA detection; the legacy `riscv,isa` string stays for boot stages that use it.
 
