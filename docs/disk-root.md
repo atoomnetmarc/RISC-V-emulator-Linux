@@ -59,12 +59,13 @@ constant chosen for this project and duplicated in the DTS files.
    - GPT, a 32M boot partition at 1M and the 16M rootfs at 33M, each with a
      fixed `partition-uuid`.
 4. `Makefile`
-   - `DISK := buildroot/output-mmu/images/disk.img`,
-     `DISK_MAX := buildroot/output-mmu-max/images/disk.img`.
+   - `DISK := $(CACHE)/out-mmu/images/disk.img`,
+     `DISK_MAX := $(CACHE)/out-mmu-max/images/disk.img`.
    - `$(BOOT_DIR)` copies the `Image` and the DTB into the boot root.
    - `disk`/`disk-max` depend on `rootfs.ext4`, the boot directory and
-     `configs/genimage-mmu.cfg`, and invoke `genimage`.
-   - `run`/`run-max` depend on the disk and pass `-D`.
+     `configs/genimage-mmu.cfg`, invoke `genimage` and copy the result into
+     the gitignored `artifacts/` directory.
+   - `run`/`run-max` depend on the copied disk and pass `-D`.
 5. Emulator DTS (`../RISC-V-emulator-Native/configs/linux-mmu.dts` and
    `linux-mmu-max.dts`)
    - `chosen/bootargs` is `root=PARTUUID=<fixed> rw rootfstype=ext4`.
@@ -73,10 +74,10 @@ constant chosen for this project and duplicated in the DTS files.
 
 ## Validation
 
-1. `make build` produces `buildroot/output-mmu/images/rootfs.ext4`.
-2. `make disk` produces `buildroot/output-mmu/images/disk.img`.
-3. `fdisk -l buildroot/output-mmu/images/disk.img` shows a GPT with a 32M
-   boot partition at 1M and a 16M rootfs partition at 33M.
+1. `make build` produces `$(CACHE)/out-mmu/images/rootfs.ext4`.
+2. `make disk` produces `artifacts/disk.img`.
+3. `fdisk -l artifacts/disk.img` shows a GPT with a 32M boot partition at 1M
+   and a 16M rootfs partition at 33M.
 4. `make run` boots through OpenSBI and U-Boot and mounts the ext4 root.
 5. Repeat for the maximal image with `make build-max`, `make disk-max` and
    `make run-max`.

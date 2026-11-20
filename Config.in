@@ -1,0 +1,2 @@
+# No external Kconfig options. Paths to the project files are set in the
+# defconfig with BR2_EXTERNAL_RV32I_PATH.

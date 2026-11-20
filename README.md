@@ -18,22 +18,31 @@ implements. Each image has its own kernel, root filesystem and GPT disk.
 | Net    | virtio-net at `0x10003000`, static IPv4 and IPv6 ULA                                 |
 | CLINT  | `0x02000000`                                                                         |
 | SYSCON | `0x00100000` (poweroff/reboot)                                                       |
-| DTB    | loaded at runtime (`-b 0x82200000,linux-mmu.dtb` or `linux-mmu-max.dtb`)             |
-| Rootfs | ext4 on a GPT disk image, attached with `-D` (`disk.img`); no initramfs              |
+| DTB    | loaded at runtime (`-b 0x82200000,artifacts/linux-mmu.dtb` or `linux-mmu-max.dtb`)   |
+| Rootfs | ext4 on a GPT disk image, attached with `-D` (`artifacts/disk.img`); no initramfs    |
 
 # Build
 
 ```sh
-make buildroot      # clone Buildroot 2026.08.1
+make buildroot      # clone Buildroot 2026.08.1 into the cache
 make                # both images and both disks
 make build          # minimal Image and rootfs.ext4
 make build-max      # maximal Image and rootfs.ext4
-make disk           # minimal disk image
-make disk-max       # maximal disk image
+make disk           # minimal disk image in artifacts/
+make disk-max       # maximal disk image in artifacts/
+make artifacts      # all final images in artifacts/
 ```
 
-The build needs `dtc` and a host toolchain. Buildroot is cloned into
-`buildroot/` and patched on demand; the directory is gitignored.
+Buildroot source, downloads and build outputs live outside the repository in
+`$XDG_CACHE_HOME/riscv-emulator` (default `~/.cache/riscv-emulator`). This
+repository is a Buildroot external tree: `external.desc`, `external.mk`,
+`Config.in`, the defconfigs, patches and overlay stay here. Buildroot is cloned
+once, patched in the cache and never written to from the repository. Only the
+final images are copied back into the gitignored `artifacts/` directory.
+
+The build needs `dtc` and a host toolchain. Override `XDG_CACHE_HOME` to move
+the cache. `make distclean` removes the outputs and artifacts but keeps the
+cache; `make purge-cache` removes the Buildroot source, downloads and outputs.
 
 # Run
 
@@ -45,22 +54,23 @@ make run-max-disasm # maximal image with the instruction tracer
 ```
 
 `make run` and `make run-max` expand to the following emulator invocations.
-Build the DTBs first with `make linux-mmu.dtb` and `make linux-mmu-max.dtb`.
+Build the DTBs first with `make artifacts/linux-mmu.dtb` and
+`make artifacts/linux-mmu-max.dtb`, or build everything with `make artifacts`.
 
 ```sh
 # minimal: OpenSBI at 0x80000000, U-Boot at 0x80400000, Linux from the disk
 ../RISC-V-emulator-Native/binaries/gcc/RV32I-linux-mmu \
-    -b 0x82200000,linux-mmu.dtb \
+    -b 0x82200000,artifacts/linux-mmu.dtb \
     -l 0x80000000,$HOME/Downloads/opensbi-1.9-rv-bin/share/opensbi/ilp32/generic/firmware/fw_jump.bin \
     -l 0x80400000,../RISC-V-emulator-u-boot/build/u-boot.bin \
-    -D buildroot/output-mmu/images/disk.img
+    -D artifacts/disk.img
 
 # maximal: the full emulator ISA, Sv32 and the SBI
 ../RISC-V-emulator-Native/binaries/gcc/RV32I-linux-mmu-max \
-    -b 0x82200000,linux-mmu-max.dtb \
+    -b 0x82200000,artifacts/linux-mmu-max.dtb \
     -l 0x80000000,$HOME/Downloads/opensbi-1.9-rv-bin/share/opensbi/ilp32/generic/firmware/fw_jump.bin \
     -l 0x80400000,../RISC-V-emulator-u-boot/build/u-boot.bin \
-    -D buildroot/output-mmu-max/images/disk.img
+    -D artifacts/disk-max.img
 ```
 
 Override `OPENSBI`, `UBOOT`, `EMULATOR_DIR` or `DTS` on the `make` command
