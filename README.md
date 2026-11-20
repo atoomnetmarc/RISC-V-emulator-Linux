@@ -44,6 +44,11 @@ The build needs `dtc` and a host toolchain. Override `XDG_CACHE_HOME` to move
 the cache. `make distclean` removes the outputs and artifacts but keeps the
 cache; `make purge-cache` removes the Buildroot source, downloads and outputs.
 
+`make run` also needs the boot stages from their own repos: build U-Boot with
+`make -C ../RISC-V-emulator-u-boot build` and OpenSBI with
+`make -C ../RISC-V-emulator-opensbi build build-max`. Both stages are pinned
+and built from source.
+
 # Run
 
 ```sh
@@ -61,22 +66,22 @@ Build the DTBs first with `make artifacts/linux-mmu.dtb` and
 # minimal: OpenSBI at 0x80000000, U-Boot at 0x80400000, Linux from the disk
 ../RISC-V-emulator-Native/binaries/gcc/RV32I-linux-mmu \
     -b 0x82200000,artifacts/linux-mmu.dtb \
-    -l 0x80000000,$HOME/Downloads/opensbi-1.9-rv-bin/share/opensbi/ilp32/generic/firmware/fw_jump.bin \
+    -l 0x80000000,../RISC-V-emulator-opensbi/build-min/platform/generic/firmware/fw_jump.bin \
     -l 0x80400000,../RISC-V-emulator-u-boot/build/u-boot.bin \
     -D artifacts/disk.img
 
 # maximal: the full emulator ISA, Sv32 and the SBI
 ../RISC-V-emulator-Native/binaries/gcc/RV32I-linux-mmu-max \
     -b 0x82200000,artifacts/linux-mmu-max.dtb \
-    -l 0x80000000,$HOME/Downloads/opensbi-1.9-rv-bin/share/opensbi/ilp32/generic/firmware/fw_jump.bin \
+    -l 0x80000000,../RISC-V-emulator-opensbi/build-max/platform/generic/firmware/fw_jump.bin \
     -l 0x80400000,../RISC-V-emulator-u-boot/build/u-boot.bin \
     -D artifacts/disk-max.img
 ```
 
-Override `OPENSBI`, `UBOOT`, `EMULATOR_DIR` or `DTS` on the `make` command
-line to use other builds. Add `-m <instructions>` to stop after a fixed
-instruction count, `-N <ifname>` to attach a TAP interface to virtio-net, or
-`-v` for an instruction trace.
+Override `OPENSBI`, `OPENSBI_MAX`, `UBOOT`, `EMULATOR_DIR` or `DTS` on the
+`make` command line to use other builds. Add `-m <instructions>` to stop after
+a fixed instruction count, `-N <ifname>` to attach a TAP interface to
+virtio-net, or `-v` for an instruction trace.
 
 # Disk layout
 
@@ -98,9 +103,12 @@ them and starts the kernel. The kernel mounts the rootfs by `PARTUUID`.
 - The DTB's `chosen/bootargs` is authoritative; `CONFIG_CMDLINE` is only a
   fallback.
 - The kernel config enables `CONFIG_TMPFS` and BusyBox enables `FEATURE_MOUNT_FLAGS`, so the fstab `mode=`, `nosuid` and `nodev` options work.
-- The emulator must implement full `M` (DIV/REM), not just `Zmmul`.
-- The minimal image needs `RV32I`, `M`, `A`, `C`, `Zicsr`, `Zifencei`,
-  `Zicntr` and `Sv32`. Build the lean emulator with:
+- The emulator must implement full `M` (DIV/REM), not just `Zmmul`. OpenSBI
+  uses `div` in `fw_base.S` and `riscv_barrier.h`, U-Boot hardcodes `rv32im`
+  and Linux hardcodes `rv32ima`; none of the three can drop M.
+- The minimal image needs `RV32I`, `M`, `A`, `Zicsr`, `Zifencei`, `Zicntr` and
+  `Sv32`. OpenSBI and the kernel use this ISA set; the kernel keeps GPT through
+  `CONFIG_EFI_PARTITION=y`. Build the lean emulator with:
   ```sh
   cd ../RISC-V-emulator-Native
   pio run -e RV32I-linux-mmu

@@ -42,10 +42,11 @@ EMULATOR_MAX ?= $(EMULATOR_DIR)/binaries/gcc/RV32I-linux-mmu-max
 EMULATOR_DISASM     ?= $(EMULATOR_DIR)/binaries/gcc/RV32I-linux-mmu-disasm
 EMULATOR_MAX_DISASM ?= $(EMULATOR_DIR)/binaries/gcc/RV32I-linux-mmu-max-disasm
 
-# The images boot through OpenSBI and U-Boot. Override OPENSBI or UBOOT
-# to use another build.
-OPENSBI ?= $(HOME)/Downloads/opensbi-1.9-rv-bin/share/opensbi/ilp32/generic/firmware/fw_jump.bin
-UBOOT   ?= ../RISC-V-emulator-u-boot/build/u-boot.bin
+# The images boot through OpenSBI and U-Boot. Both are built in their own
+# repos; override OPENSBI, OPENSBI_MAX or UBOOT to use other builds.
+OPENSBI     ?= ../RISC-V-emulator-opensbi/build-min/platform/generic/firmware/fw_jump.bin
+OPENSBI_MAX ?= ../RISC-V-emulator-opensbi/build-max/platform/generic/firmware/fw_jump.bin
+UBOOT       ?= ../RISC-V-emulator-u-boot/build/u-boot.bin
 
 # The DTS files live in the emulator repo, next to the hardware description
 # they belong to. The Linux project only builds the DTBs.
@@ -181,7 +182,7 @@ run: build $(DTB) $(DISK_ARTIFACT)
 
 run-max: build-max $(DTB_MAX) $(DISK_MAX_ARTIFACT)
 	$(EMULATOR_MAX) -b 0x82200000,$(DTB_MAX) \
-		-l 0x80000000,$(OPENSBI) -l 0x80400000,$(UBOOT) -D $(DISK_MAX_ARTIFACT)
+		-l 0x80000000,$(OPENSBI_MAX) -l 0x80400000,$(UBOOT) -D $(DISK_MAX_ARTIFACT)
 
 run-disasm: build $(DTB) $(DISK_ARTIFACT)
 	$(EMULATOR_DISASM) -b 0x82200000,$(DTB) \
@@ -189,7 +190,7 @@ run-disasm: build $(DTB) $(DISK_ARTIFACT)
 
 run-max-disasm: build-max $(DTB_MAX) $(DISK_MAX_ARTIFACT)
 	$(EMULATOR_MAX_DISASM) -b 0x82200000,$(DTB_MAX) \
-		-l 0x80000000,$(OPENSBI) -l 0x80400000,$(UBOOT) -D $(DISK_MAX_ARTIFACT)
+		-l 0x80000000,$(OPENSBI_MAX) -l 0x80400000,$(UBOOT) -D $(DISK_MAX_ARTIFACT)
 
 clean: clean-max
 	@if [ -d $(OUT) ]; then \
