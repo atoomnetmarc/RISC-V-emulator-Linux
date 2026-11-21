@@ -87,6 +87,24 @@ Override `OPENSBI`, `OPENSBI_MAX`, `UBOOT`, `EMULATOR_DIR` or `DTS` on the
 a fixed instruction count, `-N <ifname>` to attach a TAP interface to
 virtio-net, or `-v` for an instruction trace.
 
+# Terminal size
+
+Both images run the interactive shell on `hvc0` (virtio-console). The minimal
+image keeps `ttyS0` as a second console for kernel messages and early boot;
+`/dev/console` — and therefore the login — is `hvc0`. Host input is fed to both
+consoles, so typing on the minimal image can produce occasional `ttyS0: input
+overrun` messages.
+
+The Native emulator reads the host terminal size with `TIOCGWINSZ` at startup
+and on `SIGWINCH`, then publishes it through the virtio-console `F_SIZE` config
+space. The guest driver calls `hvc_resize()`, so `sl`, editors and other
+full-screen programs follow host resizes. Without a tty (pipes, snapshots) the
+size falls back to 80x25.
+
+U-Boot loads `linux.dtb` from the boot partition of the disk image, not the DTB
+passed with `-b`. After changing a DTS, run `make disk` (or `make artifacts`)
+to refresh `artifacts/disk.img`; rebuilding only the DTB is not enough.
+
 # Snapshot from Native to SimAVR
 
 The Native emulator can write a snapshot at any point in the boot and SimAVR can continue from it. Use three commands in this order.
