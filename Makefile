@@ -19,8 +19,8 @@ ROOTFS_EXT4     := $(OUT)/images/rootfs.ext4
 ROOTFS_EXT4_MAX := $(OUT_MAX)/images/rootfs.ext4
 DISK     := $(OUT)/images/disk.img
 DISK_MAX := $(OUT_MAX)/images/disk.img
-BOOT_DIR     := $(OUT)/images/boot
-BOOT_DIR_MAX := $(OUT_MAX)/images/boot
+BOOT_DTB     := $(OUT)/images/linux.dtb
+BOOT_DTB_MAX := $(OUT_MAX)/images/linux.dtb
 GENIMAGE_CFG := configs/genimage-mmu.cfg
 
 # Only final images are copied back into the repository.
@@ -64,7 +64,7 @@ MAX_KERNEL_CONFIG := $(OUT_MAX)/kernel_config_mmu_max
         run run-max run-disasm run-max-disasm \
         clean clean-max distclean purge-cache
 
-all: build build-max disk
+all: build build-max disk disk-max
 
 $(BUILDROOT_SRC)/Makefile:
 	mkdir -p $(CACHE)
@@ -118,10 +118,18 @@ $(OUT_MAX)/.config: $(BUILDROOT_STAMP) $(MAX_DEFCONFIG) \
 defconfig: $(CONFIG)
 defconfig-max: $(OUT_MAX)/.config
 
-build: $(CONFIG)
+$(BOOT_DTB): $(DTB)
+	mkdir -p $(dir $@)
+	cp $< $@
+
+$(BOOT_DTB_MAX): $(DTB_MAX)
+	mkdir -p $(dir $@)
+	cp $< $@
+
+build: $(CONFIG) $(BOOT_DTB)
 	BR2_DL_DIR=$(BUILDROOT_DL) $(MAKE) -C $(BUILDROOT_SRC) O=$(OUT) BR2_EXTERNAL=$(EXTERNAL)
 
-build-max: $(OUT_MAX)/.config
+build-max: $(OUT_MAX)/.config $(BOOT_DTB_MAX)
 	BR2_DL_DIR=$(BUILDROOT_DL) $(MAKE) -C $(BUILDROOT_SRC) O=$(OUT_MAX) BR2_EXTERNAL=$(EXTERNAL)
 
 $(ROOTFS_EXT4): build
@@ -130,28 +138,16 @@ $(ROOTFS_EXT4): build
 $(ROOTFS_EXT4_MAX): build-max
 	@test -f $@ || { echo "Error: $@ was not produced by Buildroot."; exit 1; }
 
-$(BOOT_DIR): build $(DTB)
-	mkdir -p $@
-	cp $(IMAGE) $@/Image
-	cp $(DTB) $@/linux.dtb
-
-$(BOOT_DIR_MAX): build-max $(DTB_MAX)
-	mkdir -p $@
-	cp $(IMAGE_MAX) $@/Image
-	cp $(DTB_MAX) $@/linux.dtb
-
-$(DISK): $(ROOTFS_EXT4) $(BOOT_DIR) $(GENIMAGE_CFG)
+$(DISK): $(ROOTFS_EXT4) $(GENIMAGE_CFG)
 	PATH=$(OUT)/host/bin:$$PATH \
-	genimage --rootpath $(BOOT_DIR) \
-		--tmppath $(OUT)/genimage.tmp \
+	genimage --tmppath $(OUT)/genimage.tmp \
 		--inputpath $(OUT)/images \
 		--outputpath $(OUT)/images \
 		--config $(GENIMAGE_CFG)
 
-$(DISK_MAX): $(ROOTFS_EXT4_MAX) $(BOOT_DIR_MAX) $(GENIMAGE_CFG)
+$(DISK_MAX): $(ROOTFS_EXT4_MAX) $(GENIMAGE_CFG)
 	PATH=$(OUT_MAX)/host/bin:$$PATH \
-	genimage --rootpath $(BOOT_DIR_MAX) \
-		--tmppath $(OUT_MAX)/genimage.tmp \
+	genimage --tmppath $(OUT_MAX)/genimage.tmp \
 		--inputpath $(OUT_MAX)/images \
 		--outputpath $(OUT_MAX)/images \
 		--config $(GENIMAGE_CFG)
@@ -161,10 +157,10 @@ $(ARTIFACTS)/.dir:
 	@touch $@
 
 $(DISK_ARTIFACT): $(DISK) | $(ARTIFACTS)/.dir
-	cp $< $@
+	cp --sparse=always $< $@
 
 $(DISK_MAX_ARTIFACT): $(DISK_MAX) | $(ARTIFACTS)/.dir
-	cp $< $@
+	cp --sparse=always $< $@
 
 disk: $(DISK_ARTIFACT)
 disk-max: $(DISK_MAX_ARTIFACT)

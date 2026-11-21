@@ -1,5 +1,11 @@
 Welcome to rv32i-linux (rv32imac, Sv32)
 
+Tools:
+  nano            text editor
+  mc              midnight commander
+  links           text web browser
+  python3         Python interpreter
+
 Fun commands:
   sl              steam locomotive
   ascii_invaders  ASCII space invaders

@@ -18,7 +18,7 @@ The MMU image uses:
 - `CONFIG_RTC_HCTOSYS_DEVICE="rtc0"`
 - `CONFIG_RTC_DRV_GOLDFISH=y`
 
-The image keeps the ext4 disk root and the virtio devices. The libc is uClibc-ng. U-Boot loads the kernel `Image` at `0x80600000`; OpenSBI `fw_jump` is the firmware. OpenSBI is built in [`RISC-V-emulator-opensbi`](../../RISC-V-emulator-opensbi) with the `base,ipi,time` SBI extensions. The DTS supplies `riscv,isa-base` and `riscv,isa-extensions` for ISA detection; the legacy `riscv,isa` string stays for boot stages that use it.
+The image keeps the ext4 disk root and the virtio devices. The libc is glibc, with `nano`, `mc`, `links` and Python 3 in the rootfs. U-Boot loads the kernel `Image` at `0x80600000`; OpenSBI `fw_jump` is the firmware. OpenSBI is built in [`RISC-V-emulator-opensbi`](../../RISC-V-emulator-opensbi) with the `base,ipi,time` SBI extensions. The DTS supplies `riscv,isa-base` and `riscv,isa-extensions` for ISA detection; the legacy `riscv,isa` string stays for boot stages that use it.
 
 ## Linux constraints
 
@@ -38,7 +38,7 @@ The kernel entry expects S-mode with `a0` set to the hart ID, `a1` set to the DT
 
 ## Boot chain
 
-The emulator starts in M-mode at `0x80000000` and loads OpenSBI `fw_jump.bin` at `0x80000000`. OpenSBI jumps to U-Boot at `0x80400000`. U-Boot loads the Linux `Image` and the DTB from the boot partition on the virtio disk and starts the kernel with `booti`. The memory map, the disk layout and the U-Boot environment are in [the U-Boot design](../../RISC-V-emulator-u-boot/docs/design.md); the OpenSBI build and its minimal feature set are in [the OpenSBI design](../../RISC-V-emulator-opensbi/docs/design.md).
+The emulator starts in M-mode at `0x80000000` and loads OpenSBI `fw_jump.bin` at `0x80000000`. OpenSBI jumps to U-Boot at `0x80400000`. U-Boot loads `/boot/Image` and `/boot/linux.dtb` from the single ext4 partition on the virtio disk and starts the kernel with `booti`. The memory map, the disk layout and the U-Boot environment are in [the U-Boot design](../../RISC-V-emulator-u-boot/docs/design.md); the OpenSBI build and its minimal feature set are in [the OpenSBI design](../../RISC-V-emulator-opensbi/docs/design.md).
 
 ## Buildroot
 

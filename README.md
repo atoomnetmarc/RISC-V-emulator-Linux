@@ -23,7 +23,7 @@ implements. Each image has its own kernel, root filesystem and GPT disk.
 | CLINT  | `0x02000000`                                                                                           |
 | SYSCON | `0x00100000` (poweroff/reboot)                                                                         |
 | DTB    | loaded at runtime (`-b 0x82200000,artifacts/linux-mmu.dtb` or `linux-mmu-max.dtb`)                     |
-| Rootfs | ext4 on a GPT disk image, attached with `-D` (`artifacts/disk.img`); no initramfs                      |
+| Rootfs | ext4 on a single-partition GPT disk image, attached with `-D` (`artifacts/disk.img`); no initramfs |
 
 # Build
 
@@ -101,9 +101,10 @@ space. The guest driver calls `hvc_resize()`, so `sl`, editors and other
 full-screen programs follow host resizes. Without a tty (pipes, snapshots) the
 size falls back to 80x25.
 
-U-Boot loads `linux.dtb` from the boot partition of the disk image, not the DTB
-passed with `-b`. After changing a DTS, run `make disk` (or `make artifacts`)
-to refresh `artifacts/disk.img`; rebuilding only the DTB is not enough.
+U-Boot loads `/boot/Image` and `/boot/linux.dtb` from the single ext4 partition
+of the disk image, not the DTB passed with `-b`. After changing a DTS, run
+`make disk` (or `make artifacts`) to refresh `artifacts/disk.img`; rebuilding
+only the DTB is not enough.
 
 # Snapshot from Native to SimAVR
 
@@ -132,15 +133,18 @@ Step 2 writes `boot-snapshot.json` with the CPU and device state and `boot-snaps
 
 # Disk layout
 
-The disk is a GPT image with a 32M ext4 boot partition at 1M and a 16M ext4
-rootfs at 33M. The boot partition holds the `Image` and the DTB; U-Boot loads
-them and starts the kernel. The kernel mounts the rootfs by `PARTUUID`.
+The disk is a GPT image with one 1GiB ext4 partition at 1M. It holds the root
+filesystem and `/boot/Image` and `/boot/linux.dtb`. U-Boot loads the kernel and
+DTB from partition 1 with `ext4load virtio 0:1`; the kernel mounts the same
+partition by `PARTUUID`.
 
 - `configs/genimage-mmu.cfg` defines the layout.
 - The `PARTUUID` is duplicated in the genimage config and in both DTS files in
   the emulator repo. Change it in all three places.
-- The rootfs size is `BR2_TARGET_ROOTFS_EXT2_SIZE`; increase it if the rootfs
-  grows.
+- `configs/post-build.sh` copies `Image` and `linux.dtb` into `/boot` in the
+  rootfs before Buildroot creates `rootfs.ext4`.
+- The partition size is `BR2_TARGET_ROOTFS_EXT2_SIZE`; increase it if the
+  rootfs grows.
 - The initramfs is disabled; without `-D` the kernel cannot mount the root.
 
 # Notes
@@ -150,6 +154,7 @@ them and starts the kernel. The kernel mounts the rootfs by `PARTUUID`.
 - The DTB's `chosen/bootargs` is authoritative; `CONFIG_CMDLINE` is only a
   fallback.
 - The kernel config enables `CONFIG_TMPFS` and BusyBox enables `FEATURE_MOUNT_FLAGS`, so the fstab `mode=`, `nosuid` and `nodev` options work.
+- The libc is glibc. The rootfs includes `nano`, `mc`, `links` and Python 3 with readline, curses, ssl, sqlite and zlib.
 - The emulator must implement full `M` (DIV/REM), not just `Zmmul`. OpenSBI
   uses `div` in `fw_base.S` and `riscv_barrier.h`, U-Boot hardcodes `rv32im`
   and Linux hardcodes `rv32ima`; none of the three can drop M.
