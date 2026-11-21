@@ -1,3 +1,5 @@
+![](linux-booting-in-native-emulator.png)
+
 # Description
 
 Buildroot-based Linux images for the `rv32imac` Sv32 target, booted on
